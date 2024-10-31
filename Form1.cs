@@ -35,26 +35,26 @@ namespace tekyaz7
 
             if (string.IsNullOrWhiteSpace(assemblyPath))
             {
-                MessageBox.Show("Lütfen bir SLDASM dosyası seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a SLDASM file.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!File.Exists(assemblyPath))
             {
-                MessageBox.Show($"Dosya bulunamadı: {assemblyPath}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"File not found: {assemblyPath}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             try
             {
                 rtbLogs.Clear();
-                AddLog("Dönüştürme işlemi başlatılıyor...");
+                AddLog("Starting conversion process...");
                 
                 string outputFolder = CreateOutputFolder(Path.GetDirectoryName(assemblyPath));
-                AddLog($"Çıktı klasörü oluşturuldu: {outputFolder}");
+                AddLog($"Output folder created: {outputFolder}");
                 
                 var (uniquePartPaths, totalPartCount) = GetPartPathsFromAssembly(assemblyPath);
-                AddLog($"Toplam {uniquePartPaths.Count} farklı parça {totalPartCount} adet bulundu.");
+                AddLog($"Found {uniquePartPaths.Count} unique parts with {totalPartCount} total instances.");
                 
                 progressBar.Minimum = 0;
                 progressBar.Maximum = uniquePartPaths.Count;
@@ -68,20 +68,20 @@ namespace tekyaz7
                     {
                         progressBar.Value++;
                         progressBar.Update();
-                        AddLog($"İşleniyor: {Path.GetFileName(partPath)}");
+                        AddLog($"Processing: {Path.GetFileName(partPath)}");
                         RunSolidWorksOperations(partPath, outputFolder);
                         processedParts.Add(partPath);
                         Application.DoEvents();
                     }
                 }
 
-                AddLog("Dönüştürme işlemi tamamlandı.");
-                MessageBox.Show("Dönüştürme işlemi tamamlandı.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                AddLog("Conversion process completed.");
+                MessageBox.Show("Conversion process completed.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                AddLog($"Hata oluştu: {ex.Message}");
-                MessageBox.Show($"Hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                AddLog($"Error occurred: {ex.Message}");
+                MessageBox.Show($"Error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -97,7 +97,7 @@ namespace tekyaz7
             }
             else
             {
-                rtbLogs.AppendText(message + System.Environment.NewLine);
+                rtbLogs.AppendText(message + Environment.NewLine);
                 rtbLogs.ScrollToCaret();
             }
         }
@@ -106,7 +106,7 @@ namespace tekyaz7
         {
             using OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "SolidWorks Assembly Files (*.SLDASM)|*.SLDASM";
-            openFileDialog.Title = "SLDASM Dosyası Seçin";
+            openFileDialog.Title = "Select SLDASM File";
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
@@ -117,7 +117,7 @@ namespace tekyaz7
 
         private string CreateOutputFolder(string? baseFolder)
         {
-            string outputFolder = Path.Combine(baseFolder ?? "", "ÖNDER ÇALIŞMASI");
+            string outputFolder = Path.Combine(baseFolder ?? "", "CONVERTED_DRAWINGS");
             Directory.CreateDirectory(outputFolder);
             return outputFolder;
         }
@@ -134,13 +134,13 @@ namespace tekyaz7
                 Type? swType = Type.GetTypeFromProgID("SldWorks.Application");
                 if (swType == null)
                 {
-                    throw new Exception("SolidWorks uygulaması bulunamadı.");
+                    throw new Exception("SolidWorks application not found.");
                 }
 
                 swApp = Activator.CreateInstance(swType) as SldWorks;
                 if (swApp == null)
                 {
-                    throw new Exception("SolidWorks uygulaması başlatılamadı.");
+                    throw new Exception("Failed to start SolidWorks application.");
                 }
 
                 swApp.Visible = false;
@@ -151,13 +151,13 @@ namespace tekyaz7
                 
                 if (swModel == null)
                 {
-                    throw new Exception($"Montaj açılamadı. Hatalar: {errors}, Uyarılar: {warnings}. Hata açıklaması: {GetErrorDescription(errors)}");
+                    throw new Exception($"Failed to open assembly. Errors: {errors}, Warnings: {warnings}. Error description: {GetErrorDescription(errors)}");
                 }
 
                 AssemblyDoc? swAssembly = swModel as AssemblyDoc;
                 if (swAssembly == null)
                 {
-                    throw new Exception("Model bir montaj dosyası değil.");
+                    throw new Exception("Model is not an assembly file.");
                 }
 
                 object[] components = swAssembly.GetComponents(false);
@@ -202,63 +202,63 @@ namespace tekyaz7
         }
 
         private void RunSolidWorksOperations(string filePath, string outputFolder)
-{
-    SldWorks? swApp = null;
-    ModelDoc2? swModel = null;
-    try
-    {
-        Type? swType = Type.GetTypeFromProgID("SldWorks.Application");
-        if (swType == null)
         {
-            throw new Exception("SolidWorks uygulaması bulunamadı.");
-        }
+            SldWorks? swApp = null;
+            ModelDoc2? swModel = null;
+            try
+            {
+                Type? swType = Type.GetTypeFromProgID("SldWorks.Application");
+                if (swType == null)
+                {
+                    throw new Exception("SolidWorks application not found.");
+                }
 
-        swApp = Activator.CreateInstance(swType) as SldWorks;
-        if (swApp == null)
-        {
-            throw new Exception("SolidWorks uygulaması başlatılamadı.");
-        }
+                swApp = Activator.CreateInstance(swType) as SldWorks;
+                if (swApp == null)
+                {
+                    throw new Exception("Failed to start SolidWorks application.");
+                }
 
-        swApp.Visible = true;
+                swApp.Visible = true;
 
-        int errors = 0;
-        int warnings = 0;
-        swModel = swApp.OpenDoc6(filePath, (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref errors, ref warnings);
-        
-        if (swModel == null)
-        {
-            throw new Exception($"Model açılamadı. Hatalar: {errors}, Uyarılar: {warnings}. Hata açıklaması: {GetErrorDescription(errors)}");
-        }
+                int errors = 0;
+                int warnings = 0;
+                swModel = swApp.OpenDoc6(filePath, (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref errors, ref warnings);
+                
+                if (swModel == null)
+                {
+                    throw new Exception($"Failed to open model. Errors: {errors}, Warnings: {warnings}. Error description: {GetErrorDescription(errors)}");
+                }
 
-        PartDoc? swPart = swModel as PartDoc;
-        if (swPart == null)
-        {
-            throw new Exception("Model bir parça dosyası değil.");
-        }
+                PartDoc? swPart = swModel as PartDoc;
+                if (swPart == null)
+                {
+                    throw new Exception("Model is not a part file.");
+                }
 
-        bool isSheetMetal = HasSheetMetalFeature(swPart);
+                bool isSheetMetal = HasSheetMetalFeature(swPart);
 
-        if (isSheetMetal)
-        {
-            ExportSheetMetalToDWG(swPart, filePath, outputFolder);
+                if (isSheetMetal)
+                {
+                    ExportSheetMetalToDWG(swPart, filePath, outputFolder);
+                }
+                else
+                {
+                    ExportPartToDWG(swPart, swModel, filePath, outputFolder);
+                }
+            }
+            finally
+            {
+                if (swModel != null && swApp != null)
+                {
+                    swApp.CloseDoc(swModel.GetTitle());
+                }
+                if (swApp != null)
+                {
+                    swApp.ExitApp();
+                }
+            }
         }
-        else
-        {
-            ExportPartToDWG(swPart, swModel, filePath, outputFolder);
-        }
-    }
-    finally
-    {
-        if (swModel != null && swApp != null)
-        {
-            swApp.CloseDoc(swModel.GetTitle());
-        }
-        // if (swApp != null)
-        // {
-        //     swApp.ExitApp();
-        // }
-    }
-}
 
         private void ExportSheetMetalToDWG(PartDoc swPart, string filePath, string outputFolder)
         {
@@ -269,11 +269,11 @@ namespace tekyaz7
 
             int sheetMetalOptions = 1;
             bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportSheetMetal, 
-                                              true, varAlignment, false, false, sheetMetalOptions, null);
+                                            true, varAlignment, false, false, sheetMetalOptions, null);
 
             if (!result)
             {
-                throw new Exception("Sheet metal parçası kaydedilemedi.");
+                throw new Exception("Failed to save sheet metal part.");
             }
         }
 
@@ -282,7 +282,7 @@ namespace tekyaz7
             object[] bodies = swPart.GetBodies2((int)swBodyType_e.swSolidBody, true);
             if (bodies == null || bodies.Length == 0)
             {
-                throw new Exception("Parçada katı gövde bulunamadı.");
+                throw new Exception("No solid bodies found in part.");
             }
 
             IBody2 body = (IBody2)bodies[0];
@@ -290,7 +290,7 @@ namespace tekyaz7
 
             if (boundingBox == null || boundingBox.Length != 6)
             {
-                throw new Exception("Bounding box alınamadı.");
+                throw new Exception("Failed to get bounding box.");
             }
 
             double xDimension = Math.Abs(boundingBox[3] - boundingBox[0]);
@@ -324,11 +324,11 @@ namespace tekyaz7
             object varViews = dataViews;
 
             bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportAnnotationViews, 
-                                              true, varAlignment, false, false, 0, varViews);
+                                            true, varAlignment, false, false, 0, varViews);
 
             if (!result)
             {
-                throw new Exception("Normal parça kaydedilemedi.");
+                throw new Exception("Failed to save normal part.");
             }
         }
 
@@ -350,12 +350,12 @@ namespace tekyaz7
         {
             switch (errorCode)
             {
-                case 0: return "Hata yok";
-                case 1: return "Genel hata";
-                case 2: return "Dosya bulunamadı veya erişim reddedildi";
-                case 3: return "Geçersiz dosya türü";
-                case 4: return "Dosya açılamadı";
-                default: return $"Bilinmeyen hata kodu: {errorCode}";
+                case 0: return "No error";
+                case 1: return "General error";
+                case 2: return "File not found or access denied";
+                case 3: return "Invalid file type";
+                case 4: return "Failed to open file";
+                default: return $"Unknown error code: {errorCode}";
             }
         }
     }
