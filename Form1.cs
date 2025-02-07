@@ -49,13 +49,13 @@ namespace tekyaz7
             {
                 rtbLogs.Clear();
                 AddLog("Dönüştürme işlemi başlatılıyor...");
-                
+
                 string outputFolder = CreateOutputFolder(Path.GetDirectoryName(assemblyPath));
                 AddLog($"Çıktı klasörü oluşturuldu: {outputFolder}");
-                
+
                 var (uniquePartPaths, totalPartCount) = GetPartPathsFromAssembly(assemblyPath);
                 AddLog($"Toplam {uniquePartPaths.Count} farklı parça {totalPartCount} adet bulundu.");
-                
+
                 progressBar.Minimum = 0;
                 progressBar.Maximum = uniquePartPaths.Count;
                 progressBar.Value = 0;
@@ -148,7 +148,7 @@ namespace tekyaz7
                 int errors = 0;
                 int warnings = 0;
                 swModel = swApp.OpenDoc6(assemblyPath, (int)swDocumentTypes_e.swDocASSEMBLY, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref errors, ref warnings);
-                
+
                 if (swModel == null)
                 {
                     throw new Exception($"Montaj açılamadı. Hatalar: {errors}, Uyarılar: {warnings}. Hata açıklaması: {GetErrorDescription(errors)}");
@@ -202,63 +202,63 @@ namespace tekyaz7
         }
 
         private void RunSolidWorksOperations(string filePath, string outputFolder)
-{
-    SldWorks? swApp = null;
-    ModelDoc2? swModel = null;
-    try
-    {
-        Type? swType = Type.GetTypeFromProgID("SldWorks.Application");
-        if (swType == null)
         {
-            throw new Exception("SolidWorks uygulaması bulunamadı.");
-        }
+            SldWorks? swApp = null;
+            ModelDoc2? swModel = null;
+            try
+            {
+                Type? swType = Type.GetTypeFromProgID("SldWorks.Application");
+                if (swType == null)
+                {
+                    throw new Exception("SolidWorks uygulaması bulunamadı.");
+                }
 
-        swApp = Activator.CreateInstance(swType) as SldWorks;
-        if (swApp == null)
-        {
-            throw new Exception("SolidWorks uygulaması başlatılamadı.");
-        }
+                swApp = Activator.CreateInstance(swType) as SldWorks;
+                if (swApp == null)
+                {
+                    throw new Exception("SolidWorks uygulaması başlatılamadı.");
+                }
 
-        swApp.Visible = true;
+                swApp.Visible = true;
 
-        int errors = 0;
-        int warnings = 0;
-        swModel = swApp.OpenDoc6(filePath, (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref errors, ref warnings);
-        
-        if (swModel == null)
-        {
-            throw new Exception($"Model açılamadı. Hatalar: {errors}, Uyarılar: {warnings}. Hata açıklaması: {GetErrorDescription(errors)}");
-        }
+                int errors = 0;
+                int warnings = 0;
+                swModel = swApp.OpenDoc6(filePath, (int)swDocumentTypes_e.swDocPART, (int)swOpenDocOptions_e.swOpenDocOptions_Silent, "", ref errors, ref warnings);
 
-        PartDoc? swPart = swModel as PartDoc;
-        if (swPart == null)
-        {
-            throw new Exception("Model bir parça dosyası değil.");
-        }
+                if (swModel == null)
+                {
+                    throw new Exception($"Model açılamadı. Hatalar: {errors}, Uyarılar: {warnings}. Hata açıklaması: {GetErrorDescription(errors)}");
+                }
 
-        bool isSheetMetal = HasSheetMetalFeature(swPart);
+                PartDoc? swPart = swModel as PartDoc;
+                if (swPart == null)
+                {
+                    throw new Exception("Model bir parça dosyası değil.");
+                }
 
-        if (isSheetMetal)
-        {
-            ExportSheetMetalToDWG(swPart, filePath, outputFolder);
+                bool isSheetMetal = HasSheetMetalFeature(swPart);
+
+                if (isSheetMetal)
+                {
+                    ExportSheetMetalToDWG(swPart, filePath, outputFolder);
+                }
+                else
+                {
+                    ExportPartToDWG(swPart, swModel, filePath, outputFolder);
+                }
+            }
+            finally
+            {
+                if (swModel != null && swApp != null)
+                {
+                    swApp.CloseDoc(swModel.GetTitle());
+                }
+                // if (swApp != null)
+                // {
+                //     swApp.ExitApp();
+                // }
+            }
         }
-        else
-        {
-            ExportPartToDWG(swPart, swModel, filePath, outputFolder);
-        }
-    }
-    finally
-    {
-        if (swModel != null && swApp != null)
-        {
-            swApp.CloseDoc(swModel.GetTitle());
-        }
-        // if (swApp != null)
-        // {
-        //     swApp.ExitApp();
-        // }
-    }
-}
 
         private void ExportSheetMetalToDWG(PartDoc swPart, string filePath, string outputFolder)
         {
@@ -268,8 +268,8 @@ namespace tekyaz7
             object varAlignment = dataAlignment;
 
             int sheetMetalOptions = 1;
-            bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportSheetMetal, 
-                                              true, varAlignment, false, false, sheetMetalOptions, null);
+            bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportSheetMetal,
+                true, varAlignment, false, false, sheetMetalOptions, null);
 
             if (!result)
             {
@@ -323,7 +323,7 @@ namespace tekyaz7
             string[] dataViews = new string[1] { viewName };
             object varViews = dataViews;
 
-            bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportAnnotationViews, 
+            bool result = swPart.ExportToDWG2(sPathName, filePath, (int)swExportToDWG_e.swExportToDWG_ExportAnnotationViews,
                                               true, varAlignment, false, false, 0, varViews);
 
             if (!result)
