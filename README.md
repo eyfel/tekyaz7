@@ -57,6 +57,8 @@ SolidWorks.Interop.swconst.dll
 string assemblyPath = @"C:\Path\To\Your\Assembly.SLDASM";
 var converter = new SolidWorksDrawingConverter();
 converter.ConvertAssembly(assemblyPath);
+
+// Or just write "dotnet run" to console
 ```
 
 ## ⚙️ Configuration
